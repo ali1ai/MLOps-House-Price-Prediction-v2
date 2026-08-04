@@ -13,10 +13,17 @@ def df():
 # 1. Basic schema validation
 # ---------------------------------------------------------
 
+
 def test_required_columns_exist(df):
     required = [
-        "MSSubClass", "MSZoning", "LotArea", "OverallQual", "OverallCond",
-        "YearBuilt", "GrLivArea", "SalePrice"
+        "MSSubClass",
+        "MSZoning",
+        "LotArea",
+        "OverallQual",
+        "OverallCond",
+        "YearBuilt",
+        "GrLivArea",
+        "SalePrice",
     ]
     for col in required:
         assert col in df.columns
@@ -25,6 +32,7 @@ def test_required_columns_exist(df):
 # ---------------------------------------------------------
 # 2. Missing values
 # ---------------------------------------------------------
+
 
 def test_no_missing_target(df):
     assert df["SalePrice"].isnull().sum() == 0
@@ -40,6 +48,7 @@ def test_no_missing_critical_features(df):
 # 3. Numeric ranges
 # ---------------------------------------------------------
 
+
 def test_lotarea_positive(df):
     assert (df["LotArea"] > 0).all()
 
@@ -53,6 +62,7 @@ def test_grlivarea_reasonable(df):
 # 4. Categorical allowed sets
 # ---------------------------------------------------------
 
+
 def test_mszoning_allowed_values(df):
     allowed = {"RL", "RM", "FV", "RH", "C (all)"}
     assert set(df["MSZoning"].dropna().unique()).issubset(allowed)
@@ -62,6 +72,7 @@ def test_mszoning_allowed_values(df):
 # 5. Duplicates
 # ---------------------------------------------------------
 
+
 def test_no_duplicate_rows(df):
     assert df.duplicated().sum() == 0
 
@@ -69,6 +80,7 @@ def test_no_duplicate_rows(df):
 # ---------------------------------------------------------
 # 6. Outliers
 # ---------------------------------------------------------
+
 
 def test_saleprice_not_extreme(df):
     # Typical range: 20k to 750k
@@ -78,6 +90,7 @@ def test_saleprice_not_extreme(df):
 # ---------------------------------------------------------
 # 7. Date formats (if present)
 # ---------------------------------------------------------
+
 
 def test_yearbuilt_valid(df):
     assert df["YearBuilt"].between(1800, 2026).all()

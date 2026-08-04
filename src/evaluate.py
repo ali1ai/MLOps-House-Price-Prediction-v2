@@ -22,13 +22,10 @@ model.load_model(str(model_path))
 preds = model.predict(X_test)
 
 mse = mean_squared_error(y_test, preds)
-rmse = mse ** 0.5
+rmse = mse**0.5
 mae = mean_absolute_error(y_test, preds)
 
-metrics = {
-    "rmse": rmse,
-    "mae": mae
-}
+metrics = {"rmse": rmse, "mae": mae}
 
 with open("reports/metrics.json", "w") as f:
     json.dump(metrics, f)

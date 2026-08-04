@@ -21,10 +21,7 @@ y_train = df_train["SalePrice"]
 X_test = df_test.drop(columns=["SalePrice"])
 y_test = df_test["SalePrice"]
 
-cat_features = [
-    i for i, col in enumerate(X_train.columns)
-    if X_train[col].dtype == "object"
-]
+cat_features = [i for i, col in enumerate(X_train.columns) if X_train[col].dtype == "object"]
 
 mlflow.set_experiment("ames-catboost")
 
@@ -39,7 +36,7 @@ with mlflow.start_run():
         learning_rate=params["model"]["learning_rate"],
         iterations=params["model"]["iterations"],
         loss_function="RMSE",
-        verbose=False
+        verbose=False,
     )
 
     model.fit(X_train, y_train, cat_features=cat_features)
@@ -47,7 +44,7 @@ with mlflow.start_run():
     preds = model.predict(X_test)
 
     mse = mean_squared_error(y_test, preds)
-    rmse = mse ** 0.5
+    rmse = mse**0.5
     mae = mean_absolute_error(y_test, preds)
 
     mlflow.log_metric("rmse", rmse)

@@ -11,7 +11,7 @@ def test_predict_endpoint_success():
         "OverallQual": 7,
         "OverallCond": 5,
         "YearBuilt": 2003,
-        "GrLivArea": 1710
+        "GrLivArea": 1710,
     }
 
     response = client.post("/predict", json=payload)

@@ -18,9 +18,7 @@ cat_cols = df.select_dtypes(include=["object"]).columns
 df[cat_cols] = df[cat_cols].fillna("Unknown")
 
 train_df, test_df = train_test_split(
-    df,
-    test_size=params["split"]["test_size"],
-    random_state=params["split"]["random_state"]
+    df, test_size=params["split"]["test_size"], random_state=params["split"]["random_state"]
 )
 
 train_df.to_csv(train_path, index=False)
