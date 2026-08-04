@@ -3,6 +3,7 @@ from app.main import app
 
 client = TestClient(app)
 
+
 def test_predict_endpoint_success():
     payload = {
         "MSZoning": "RL",
@@ -17,6 +18,7 @@ def test_predict_endpoint_success():
     assert response.status_code == 200
     assert "prediction" in response.json()
     assert isinstance(response.json()["prediction"], float)
+
 
 def test_predict_endpoint_missing_field():
     payload = {
