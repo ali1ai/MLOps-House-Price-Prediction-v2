@@ -3,7 +3,6 @@ import pandas as pd
 
 MODEL_PATH = "models/catboost_model.cbm"
 
-# Load model once at startup
 model = CatBoostRegressor()
 model.load_model(MODEL_PATH)
 
@@ -17,19 +16,29 @@ FEATURES = [
     "ExterQual", "ExterCond", "Foundation", "BsmtQual", "BsmtCond",
     "BsmtExposure", "BsmtFinType1", "BsmtFinSF1", "BsmtFinType2",
     "BsmtFinSF2", "BsmtUnfSF", "TotalBsmtSF", "Heating", "HeatingQC",
-    "CentralAir", "Electrical", "1stFlrSF", "2ndFlrSF", "LowQualFinSF",
+    "CentralAir", "Electrical", "FirstFlrSF", "SecondFlrSF", "LowQualFinSF",
     "GrLivArea", "BsmtFullBath", "BsmtHalfBath", "FullBath", "HalfBath",
     "BedroomAbvGr", "KitchenAbvGr", "KitchenQual", "TotRmsAbvGrd",
     "Functional", "Fireplaces", "FireplaceQu", "GarageType", "GarageYrBlt",
     "GarageFinish", "GarageCars", "GarageArea", "GarageQual", "GarageCond",
     "PavedDrive", "WoodDeckSF", "OpenPorchSF", "EnclosedPorch",
-    "3SsnPorch", "ScreenPorch", "PoolArea", "PoolQC", "Fence",
+    "ThreeSsnPorch", "ScreenPorch", "PoolArea", "PoolQC", "Fence",
     "MiscFeature", "MiscVal", "MoSold", "YrSold", "SaleType",
     "SaleCondition"
 ]
 
-# Identify categorical columns
-CAT_COLS = [col for col in FEATURES if df[col].dtype == "object"]
+# Manually define categorical columns (correct)
+CAT_COLS = [
+    "MSZoning", "Street", "Alley", "LotShape", "LandContour", "Utilities",
+    "LotConfig", "LandSlope", "Neighborhood", "Condition1", "Condition2",
+    "BldgType", "HouseStyle", "RoofStyle", "RoofMatl", "Exterior1st",
+    "Exterior2nd", "MasVnrType", "ExterQual", "ExterCond", "Foundation",
+    "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "BsmtFinType2",
+    "Heating", "HeatingQC", "CentralAir", "Electrical", "KitchenQual",
+    "Functional", "FireplaceQu", "GarageType", "GarageFinish", "GarageQual",
+    "GarageCond", "PavedDrive", "PoolQC", "Fence", "MiscFeature",
+    "SaleType", "SaleCondition"
+]
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # Fill missing categorical values
@@ -48,4 +57,3 @@ def predict_sale_price(payload: dict) -> float:
     df = preprocess(df)
     pred = model.predict(df[FEATURES])[0]
     return float(pred)
-
