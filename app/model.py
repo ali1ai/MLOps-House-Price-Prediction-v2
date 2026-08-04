@@ -40,6 +40,7 @@ CAT_COLS = [
     "SaleType", "SaleCondition"
 ]
 
+
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # Fill missing categorical values
     for col in CAT_COLS:
@@ -51,6 +52,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = df[col].fillna(0)
 
     return df
+
 
 def predict_sale_price(payload: dict) -> float:
     df = pd.DataFrame([payload])
