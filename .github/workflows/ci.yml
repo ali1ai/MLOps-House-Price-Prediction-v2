@@ -34,6 +34,9 @@ jobs:
 
       - name: Show app/main.py
         run: cat app/main.py
+
+      - name: Show Black diff
+        run: black --diff app/main.py
         
       - name: Run formatting check
         run: black --check .
