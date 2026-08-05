@@ -101,4 +101,3 @@ def root():
 def predict(features: HouseFeatures):
     prediction = predict_sale_price(features.dict())
     return {"SalePrice": prediction}
-
