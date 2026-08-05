@@ -26,9 +26,15 @@ jobs:
           pip install -r requirements.txt
           pip install pytest flake8 black
 
+      - name: Show Black version
+        run: black --version
+        
       - name: Run linting
         run: flake8 .
 
+      - name: Show app/main.py
+        run: cat app/main.py
+        
       - name: Run formatting check
         run: black --check .
 
