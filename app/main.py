@@ -1,13 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-
 from app.model import predict_sale_price
 
 
 app = FastAPI(
     title="Ames Housing Price Prediction API",
     description="Predict house prices using a CatBoost model",
-    version="1.0",
+    version="1.0"
 )
 
 
@@ -102,3 +101,4 @@ def root():
 def predict(features: HouseFeatures):
     prediction = predict_sale_price(features.dict())
     return {"SalePrice": prediction}
+
