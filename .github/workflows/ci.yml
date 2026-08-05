@@ -2,9 +2,12 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: ["*", "!main"]
+    branches:
+      - "*"
+      - "!main"
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -22,29 +25,20 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest flake8 black
+          pip install pytest flake8 black==26.5.1
 
-      - name: Show Black version
-        run: black --version
-        
       - name: Run linting
         run: flake8 .
 
-      - name: Show app/main.py
-        run: cat app/main.py
-
-      - name: Show Black diff
-        run: black --diff app/main.py
-        
       - name: Run formatting check
         run: black --check .
 
       - name: Run unit tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-         run: python -m pytest -q
+        run: python -m pytest -q
 
   deploy:
     needs: ci-tests
