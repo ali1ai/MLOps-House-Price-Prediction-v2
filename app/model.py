@@ -1,12 +1,16 @@
-from catboost import CatBoostRegressor
-import pandas as pd
+from pathlib import Path
 
-MODEL_PATH = "models/catboost_model.cbm"
+import pandas as pd
+from catboost import CatBoostRegressor
+
+
+MODEL_PATH = Path("models/catboost_model.cbm")
 
 model = CatBoostRegressor()
-model.load_model(MODEL_PATH)
+model.load_model(str(MODEL_PATH))
 
-# Full feature list (same as training)
+
+# API-friendly feature names used by FastAPI and Pydantic.
 FEATURES = [
     "MSSubClass",
     "MSZoning",
@@ -89,7 +93,23 @@ FEATURES = [
     "SaleCondition",
 ]
 
-# Manually define categorical columns (correct)
+
+# Convert API-friendly names to the original Ames column names used
+# when the CatBoost model was trained.
+API_TO_MODEL_COLUMNS = {
+    "FirstFlrSF": "1stFlrSF",
+    "SecondFlrSF": "2ndFlrSF",
+    "ThreeSsnPorch": "3SsnPorch",
+}
+
+
+# Exact feature names and order expected by the saved CatBoost model.
+MODEL_FEATURES = [
+    API_TO_MODEL_COLUMNS.get(feature, feature) for feature in FEATURES
+]
+
+
+# Original categorical feature names expected by the trained model.
 CAT_COLS = [
     "MSZoning",
     "Street",
@@ -138,20 +158,51 @@ CAT_COLS = [
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-    # Fill missing categorical values
-    for col in CAT_COLS:
-        df[col] = df[col].astype(str).fillna("Missing")
+    """Fill missing values using the same types expected by CatBoost."""
 
-    # Fill missing numeric values
-    for col in df.columns:
-        if col not in CAT_COLS:
-            df[col] = df[col].fillna(0)
+    for column in CAT_COLS:
+        if column in df.columns:
+            df[column] = df[column].fillna("Missing").astype(str)
+
+    for column in df.columns:
+        if column not in CAT_COLS:
+            df[column] = pd.to_numeric(df[column], errors="coerce").fillna(0)
 
     return df
 
 
 def predict_sale_price(payload: dict) -> float:
+    """Predict a house sale price from one API request payload."""
+
     df = pd.DataFrame([payload])
+
+    missing_api_features = [
+        feature for feature in FEATURES if feature not in df.columns
+    ]
+    if missing_api_features:
+        raise ValueError(
+            f"Missing required features: {missing_api_features}"
+        )
+
+    # Keep only the expected API features and preserve their order.
+    df = df[FEATURES]
+
+    # Rename the API-friendly columns to the original training names.
+    df = df.rename(columns=API_TO_MODEL_COLUMNS)
+
+    # Verify that all model features are present.
+    missing_model_features = [
+        feature for feature in MODEL_FEATURES if feature not in df.columns
+    ]
+    if missing_model_features:
+        raise ValueError(
+            f"Missing model features after renaming: "
+            f"{missing_model_features}"
+        )
+
+    # Use the exact feature order expected by CatBoost.
+    df = df[MODEL_FEATURES]
     df = preprocess(df)
-    pred = model.predict(df[FEATURES])[0]
-    return float(pred)
+
+    prediction = model.predict(df)[0]
+    return float(prediction)
