@@ -1,31 +1,48 @@
+import pandas as pd
 from fastapi.testclient import TestClient
+
 from app.main import app
 
 client = TestClient(app)
 
 
 def test_predict_endpoint_success():
+    df = pd.read_csv("data/train.csv")
+
+    row = df.iloc[0].drop(labels=["Id", "SalePrice"], errors="ignore")
+
+    row = row.rename(
+        {
+            "1stFlrSF": "FirstFlrSF",
+            "2ndFlrSF": "SecondFlrSF",
+            "3SsnPorch": "ThreeSsnPorch",
+        }
+    )
+
     payload = {
-        "MSZoning": "RL",
-        "LotArea": 8450,
-        "OverallQual": 7,
-        "OverallCond": 5,
-        "YearBuilt": 2003,
-        "GrLivArea": 1710,
+        key: (
+            None
+            if pd.isna(value)
+            else value.item()
+            if hasattr(value, "item")
+            else value
+        )
+        for key, value in row.items()
     }
 
     response = client.post("/predict", json=payload)
-    assert response.status_code == 200
-    assert "prediction" in response.json()
-    assert isinstance(response.json()["prediction"], float)
+
+    assert response.status_code == 200, response.text
+    assert "SalePrice" in response.json()
+    assert isinstance(response.json()["SalePrice"], (int, float))
 
 
 def test_predict_endpoint_missing_field():
     payload = {
         "MSZoning": "RL",
         "LotArea": 8450,
-        # Missing required fields
     }
 
     response = client.post("/predict", json=payload)
-    assert response.status_code == 422  # FastAPI validation error
+
+    assert response.status_code == 422
