@@ -83,8 +83,8 @@ def test_no_duplicate_rows(df):
 
 
 def test_saleprice_not_extreme(df):
-    # Typical range: 20k to 750k
-    assert df["SalePrice"].between(20000, 750000).all()
+    # Ames training data maximum is 755,000
+    assert df["SalePrice"].between(20000, 800000).all()
 
 
 # ---------------------------------------------------------
