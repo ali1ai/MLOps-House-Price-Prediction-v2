@@ -96,5 +96,5 @@ def root():
 
 @app.post("/predict")
 def predict(features: HouseFeatures):
-    prediction = predict_sale_price(features.dict())
+    prediction = predict_sale_price(features.model_dump())
     return {"SalePrice": prediction}
