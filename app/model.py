@@ -3,8 +3,12 @@ from pathlib import Path
 import pandas as pd
 from catboost import CatBoostRegressor
 
+# Build the model path relative to the project directory.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODEL_PATH = PROJECT_ROOT / "models" / "catboost_model.cbm"
 
-MODEL_PATH = Path("models/catboost_model.cbm")
+if not MODEL_PATH.exists():
+    raise FileNotFoundError(f"CatBoost model file was not found: {MODEL_PATH}")
 
 model = CatBoostRegressor()
 model.load_model(str(MODEL_PATH))
@@ -94,8 +98,8 @@ FEATURES = [
 ]
 
 
-# Convert API-friendly names to the original Ames column names used
-# when the CatBoost model was trained.
+# Map Python-friendly API names to the original Ames column names
+# used when the saved CatBoost model was trained.
 API_TO_MODEL_COLUMNS = {
     "FirstFlrSF": "1stFlrSF",
     "SecondFlrSF": "2ndFlrSF",
@@ -103,13 +107,7 @@ API_TO_MODEL_COLUMNS = {
 }
 
 
-# Exact feature names and order expected by the saved CatBoost model.
-MODEL_FEATURES = [
-    API_TO_MODEL_COLUMNS.get(feature, feature) for feature in FEATURES
-]
-
-
-# Original categorical feature names expected by the trained model.
+# Categorical columns expected by the trained CatBoost model.
 CAT_COLS = [
     "MSZoning",
     "Street",
@@ -158,7 +156,9 @@ CAT_COLS = [
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-    """Fill missing values using the same types expected by CatBoost."""
+    """Fill missing values and prepare data types for CatBoost."""
+
+    df = df.copy()
 
     for column in CAT_COLS:
         if column in df.columns:
@@ -172,36 +172,34 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def predict_sale_price(payload: dict) -> float:
-    """Predict a house sale price from one API request payload."""
+    """Predict the sale price for one house."""
 
     df = pd.DataFrame([payload])
 
-    missing_api_features = [
-        feature for feature in FEATURES if feature not in df.columns
-    ]
+    missing_api_features = [feature for feature in FEATURES if feature not in df.columns]
     if missing_api_features:
-        raise ValueError(
-            f"Missing required features: {missing_api_features}"
-        )
+        raise ValueError(f"Missing required API features: {missing_api_features}")
 
-    # Keep only the expected API features and preserve their order.
-    df = df[FEATURES]
+    # Keep the API columns in a consistent order.
+    df = df[FEATURES].copy()
 
-    # Rename the API-friendly columns to the original training names.
+    # Create the engineered missing-value indicators that were present
+    # when the saved model was trained. These must be created before
+    # filling the original missing values.
+    df["LotFrontage_missing"] = df["LotFrontage"].isna().astype(int)
+    df["MasVnrArea_missing"] = df["MasVnrArea"].isna().astype(int)
+
+    # Rename API-friendly fields to their original Ames names.
     df = df.rename(columns=API_TO_MODEL_COLUMNS)
 
-    # Verify that all model features are present.
-    missing_model_features = [
-        feature for feature in MODEL_FEATURES if feature not in df.columns
-    ]
-    if missing_model_features:
-        raise ValueError(
-            f"Missing model features after renaming: "
-            f"{missing_model_features}"
-        )
+    # Read the exact feature names and ordering from the saved model.
+    model_features = list(model.feature_names_)
 
-    # Use the exact feature order expected by CatBoost.
-    df = df[MODEL_FEATURES]
+    missing_model_features = [feature for feature in model_features if feature not in df.columns]
+    if missing_model_features:
+        raise ValueError(f"Features required by the trained model are missing: {missing_model_features}")
+
+    df = df[model_features]
     df = preprocess(df)
 
     prediction = model.predict(df)[0]

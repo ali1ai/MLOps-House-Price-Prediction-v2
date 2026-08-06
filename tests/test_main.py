@@ -7,7 +7,7 @@ client = TestClient(app)
 
 
 def test_predict_endpoint_success():
-    df = pd.read_csv("data/train.csv")
+    df = pd.read_csv("data/raw/train.csv")
 
     row = df.iloc[0].drop(labels=["Id", "SalePrice"], errors="ignore")
 
@@ -20,13 +20,7 @@ def test_predict_endpoint_success():
     )
 
     payload = {
-        key: (
-            None
-            if pd.isna(value)
-            else value.item()
-            if hasattr(value, "item")
-            else value
-        )
+        key: (None if pd.isna(value) else value.item() if hasattr(value, "item") else value)
         for key, value in row.items()
     }
 
