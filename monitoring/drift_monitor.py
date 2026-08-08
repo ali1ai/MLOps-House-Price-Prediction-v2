@@ -5,7 +5,6 @@ import pandas as pd
 from evidently import Report
 from evidently.presets import DataDriftPreset, DataSummaryPreset
 
-
 # --------------------------------------------------
 # 1. Paths
 # --------------------------------------------------
@@ -58,11 +57,7 @@ print("Evidently drift report generated successfully.")
 
 # Only compare columns that exist in both datasets.
 # SalePrice is excluded because new_batch.csv does not contain the target.
-common_columns = [
-    column
-    for column in baseline.columns
-    if column in new_data.columns and column != "SalePrice"
-]
+common_columns = [column for column in baseline.columns if column in new_data.columns and column != "SalePrice"]
 
 drifted_columns = []
 
@@ -85,23 +80,11 @@ for column in common_columns:
 
     # Categorical columns
     else:
-        baseline_distribution = (
-            baseline[column]
-            .fillna("Missing")
-            .astype(str)
-            .value_counts(normalize=True)
-        )
+        baseline_distribution = baseline[column].fillna("Missing").astype(str).value_counts(normalize=True)
 
-        new_distribution = (
-            new_data[column]
-            .fillna("Missing")
-            .astype(str)
-            .value_counts(normalize=True)
-        )
+        new_distribution = new_data[column].fillna("Missing").astype(str).value_counts(normalize=True)
 
-        all_categories = baseline_distribution.index.union(
-            new_distribution.index
-        )
+        all_categories = baseline_distribution.index.union(new_distribution.index)
 
         baseline_distribution = baseline_distribution.reindex(
             all_categories,
@@ -113,9 +96,7 @@ for column in common_columns:
             fill_value=0,
         )
 
-        total_difference = (
-            baseline_distribution - new_distribution
-        ).abs().sum() / 2
+        total_difference = (baseline_distribution - new_distribution).abs().sum() / 2
 
         # Simple categorical drift threshold
         if total_difference > 0.2:

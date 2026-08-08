@@ -6,7 +6,6 @@ from catboost import CatBoostRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-
 # --------------------------------------------------
 # 1. Paths
 # --------------------------------------------------
@@ -26,10 +25,7 @@ TARGET = "SalePrice"
 # --------------------------------------------------
 
 if not DRIFT_STATUS_PATH.exists():
-    raise FileNotFoundError(
-        "Drift status file not found. "
-        "Run monitoring/drift_monitor.py first."
-    )
+    raise FileNotFoundError("Drift status file not found. " "Run monitoring/drift_monitor.py first.")
 
 with open(DRIFT_STATUS_PATH, "r") as file:
     drift_status = json.load(file)
@@ -73,6 +69,7 @@ print("Current model expects", len(MODEL_FEATURES), "features.")
 # 5. Prepare features
 # --------------------------------------------------
 
+
 def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
@@ -84,38 +81,21 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Create engineered missing-value indicators used
     # when the deployed CatBoost model was trained.
-    df["LotFrontage_missing"] = (
-        df["LotFrontage"].isna().astype(int)
-    )
+    df["LotFrontage_missing"] = df["LotFrontage"].isna().astype(int)
 
-    df["MasVnrArea_missing"] = (
-        df["MasVnrArea"].isna().astype(int)
-    )
+    df["MasVnrArea_missing"] = df["MasVnrArea"].isna().astype(int)
 
     # Fill missing categorical values.
-    categorical_columns = df.select_dtypes(
-        include=["object"]
-    ).columns
+    categorical_columns = df.select_dtypes(include=["object"]).columns
 
     for column in categorical_columns:
-        df[column] = (
-            df[column]
-            .fillna("Missing")
-            .astype(str)
-        )
+        df[column] = df[column].fillna("Missing").astype(str)
 
     # Check that every feature expected by the model exists.
-    missing_features = [
-        feature
-        for feature in MODEL_FEATURES
-        if feature not in df.columns
-    ]
+    missing_features = [feature for feature in MODEL_FEATURES if feature not in df.columns]
 
     if missing_features:
-        raise ValueError(
-            "Missing features required by model: "
-            f"{missing_features}"
-        )
+        raise ValueError("Missing features required by model: " f"{missing_features}")
 
     # Use the exact feature names and order expected
     # by the deployed model.
@@ -146,10 +126,13 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 old_preds = old_model.predict(X_val)
 
-old_rmse = mean_squared_error(
-    y_val,
-    old_preds,
-) ** 0.5
+old_rmse = (
+    mean_squared_error(
+        y_val,
+        old_preds,
+    )
+    ** 0.5
+)
 
 old_mae = mean_absolute_error(
     y_val,
@@ -171,9 +154,7 @@ print("R2:", old_r2)
 # 8. Train candidate model
 # --------------------------------------------------
 
-cat_features = X_train.select_dtypes(
-    include=["object"]
-).columns.tolist()
+cat_features = X_train.select_dtypes(include=["object"]).columns.tolist()
 
 new_model = CatBoostRegressor(
     iterations=500,
@@ -197,10 +178,13 @@ new_model.fit(
 
 new_preds = new_model.predict(X_val)
 
-new_rmse = mean_squared_error(
-    y_val,
-    new_preds,
-) ** 0.5
+new_rmse = (
+    mean_squared_error(
+        y_val,
+        new_preds,
+    )
+    ** 0.5
+)
 
 new_mae = mean_absolute_error(
     y_val,
@@ -251,9 +235,7 @@ with open(METRICS_PATH, "w") as file:
 # --------------------------------------------------
 
 if new_rmse < old_rmse:
-    new_model.save_model(
-        str(OLD_MODEL_PATH)
-    )
+    new_model.save_model(str(OLD_MODEL_PATH))
 
     print("\nCandidate model is better.")
     print("Current deployed model has been replaced.")
