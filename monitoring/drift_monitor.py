@@ -46,9 +46,15 @@ result = report.run(
     current_data=new_data,
 )
 
-result.save_html(HTML_REPORT_PATH)
+result.save_html(str(HTML_REPORT_PATH))
+
+if not HTML_REPORT_PATH.exists():
+    raise FileNotFoundError(
+        f"Expected HTML report was not created: {HTML_REPORT_PATH}"
+    )
 
 print("Evidently drift report generated successfully.")
+print("HTML report size:", HTML_REPORT_PATH.stat().st_size, "bytes")
 
 
 # --------------------------------------------------

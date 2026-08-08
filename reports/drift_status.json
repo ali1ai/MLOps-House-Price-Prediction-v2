@@ -1,0 +1,9 @@
+{
+    "drift_detected": false,
+    "drift_share": 0.0125,
+    "drifted_columns_count": 1,
+    "total_columns_checked": 80,
+    "drifted_columns": [
+        "Id"
+    ]
+}
