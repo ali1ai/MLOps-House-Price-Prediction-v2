@@ -1,13 +1,25 @@
 split:
-  test_size: 0.2
+  validation_size: 0.15
+  test_size: 0.15
   random_state: 42
 
 data:
   raw: data/raw/ames.csv
   train: data/processed/train.csv
+  validation: data/processed/validation.csv
   test: data/processed/test.csv
 
 model:
   depth: 8
   learning_rate: 0.1
   iterations: 500
+  random_seed: 42
+
+paths:
+  model: models/catboost_model.cbm
+  metrics: reports/metrics.json
+
+mlflow:
+  tracking_uri: sqlite:///mlflow.db
+  experiment_name: ames-house-price-catboost
+  run_name: baseline

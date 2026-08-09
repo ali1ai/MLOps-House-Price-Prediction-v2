@@ -1,29 +1,34 @@
 stages:
   prepare:
-    cmd: python src/prepare.py
+    cmd: python -m src.prepare
     deps:
       - src/prepare.py
+      - src/preprocessing.py
       - data/raw/ames.csv
       - params.yaml
     outs:
       - data/processed/train.csv
+      - data/processed/validation.csv
       - data/processed/test.csv
 
   train:
-    cmd: python src/train.py
+    cmd: python -m src.train
     deps:
       - src/train.py
+      - src/preprocessing.py
       - data/processed/train.csv
+      - data/processed/validation.csv
       - params.yaml
     outs:
       - models/catboost_model.cbm
 
   evaluate:
-    cmd: python src/evaluate.py
+    cmd: python -m src.evaluate
     deps:
       - src/evaluate.py
+      - src/preprocessing.py
       - data/processed/test.csv
       - models/catboost_model.cbm
       - params.yaml
-    outs:
+    metrics:
       - reports/metrics.json

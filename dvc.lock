@@ -1,70 +1,90 @@
 schema: '2.0'
 stages:
   prepare:
-    cmd: python src/prepare.py
+    cmd: python -m src.prepare
     deps:
     - path: data/raw/ames.csv
       hash: md5
-      md5: 80ccab65fb115cbad143dbbd2bcd5577
-      size: 460676
+      md5: dbfd1a4af4117b7ec1d130572d9c6d7b
+      size: 462137
     - path: params.yaml
       hash: md5
-      md5: 4603737511aedb5acc0dd3361feab67d
-      size: 210
+      md5: 6b7b6e862eeafd2994614c02da0680d1
+      size: 495
     - path: src/prepare.py
       hash: md5
-      md5: 9c2b331a95fb648a39c365ceb395de82
-      size: 718
+      md5: 6280126c0ea6c51ff8b3147bfda9b0cd
+      size: 2220
+    - path: src/preprocessing.py
+      hash: md5
+      md5: a9c367a0f69f8f4adfbe702e4b2e7a7b
+      size: 3772
     outs:
     - path: data/processed/test.csv
       hash: md5
-      md5: 28d031c1e184979047044b26627870ee
-      size: 100539
+      md5: eb3184281eae8f9c9e593203a9bcbbe6
+      size: 76657
     - path: data/processed/train.csv
       hash: md5
-      md5: c0515b75db0f6d8c7dfd420a13b0cf51
-      size: 399300
+      md5: a3553f5e9387cbf421c222139f471a02
+      size: 354377
+    - path: data/processed/validation.csv
+      hash: md5
+      md5: c7a6240960e6bdf147d528e21d43581e
+      size: 76659
   train:
-    cmd: python src/train.py
+    cmd: python -m src.train
     deps:
     - path: data/processed/train.csv
       hash: md5
-      md5: c0515b75db0f6d8c7dfd420a13b0cf51
-      size: 399300
+      md5: a3553f5e9387cbf421c222139f471a02
+      size: 354377
+    - path: data/processed/validation.csv
+      hash: md5
+      md5: c7a6240960e6bdf147d528e21d43581e
+      size: 76659
     - path: params.yaml
       hash: md5
-      md5: 4603737511aedb5acc0dd3361feab67d
-      size: 210
+      md5: 6b7b6e862eeafd2994614c02da0680d1
+      size: 495
+    - path: src/preprocessing.py
+      hash: md5
+      md5: a9c367a0f69f8f4adfbe702e4b2e7a7b
+      size: 3772
     - path: src/train.py
       hash: md5
-      md5: 2e31755f94615213db64b5e07f9c62e5
-      size: 1702
+      md5: 7872455a8f0299c3485de5b7ceaef122
+      size: 6029
     outs:
     - path: models/catboost_model.cbm
       hash: md5
-      md5: 356c56e851d67231c717b35368bb82b3
-      size: 2263984
+      md5: 67bacb7ec7bfd05a49f2758215a408a1
+      size: 2209980
   evaluate:
-    cmd: python src/evaluate.py
+    cmd: python -m src.evaluate
     deps:
     - path: data/processed/test.csv
       hash: md5
-      md5: 28d031c1e184979047044b26627870ee
-      size: 100539
+      md5: eb3184281eae8f9c9e593203a9bcbbe6
+      size: 76657
     - path: models/catboost_model.cbm
       hash: md5
-      md5: 356c56e851d67231c717b35368bb82b3
-      size: 2263984
+      md5: 67bacb7ec7bfd05a49f2758215a408a1
+      size: 2209980
     - path: params.yaml
       hash: md5
-      md5: 4603737511aedb5acc0dd3361feab67d
-      size: 210
+      md5: 6b7b6e862eeafd2994614c02da0680d1
+      size: 495
     - path: src/evaluate.py
       hash: md5
-      md5: 3853113ed0d70fa6d2519383544e48c4
-      size: 832
+      md5: 35641269487904078e8b64f12d6c5c96
+      size: 4138
+    - path: src/preprocessing.py
+      hash: md5
+      md5: a9c367a0f69f8f4adfbe702e4b2e7a7b
+      size: 3772
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: 7816423ed9c1daf50d53e24f71184a28
-      size: 53
+      md5: ea7452aeabfb6f1d60b96b0a20d4aeb2
+      size: 148
