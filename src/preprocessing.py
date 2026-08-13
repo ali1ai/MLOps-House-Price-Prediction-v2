@@ -95,11 +95,7 @@ def preprocess_features(
 
     for column in MISSING_INDICATOR_COLUMNS:
         if column in df.columns:
-            df[f"{column}_missing"] = (
-                df[column]
-                .isna()
-                .astype(int)
-            )
+            df[f"{column}_missing"] = df[column].isna().astype(int)
 
     # -----------------------------------------------------
     # Categorical preprocessing
@@ -107,11 +103,7 @@ def preprocess_features(
 
     for column in CATEGORICAL_FEATURES:
         if column in df.columns:
-            df[column] = (
-                df[column]
-                .fillna(MISSING_CATEGORY_TOKEN)
-                .astype(str)
-            )
+            df[column] = df[column].fillna(MISSING_CATEGORY_TOKEN).astype(str)
 
     # -----------------------------------------------------
     # Numerical preprocessing
@@ -120,20 +112,13 @@ def preprocess_features(
     # is treated as numerical.
     # -----------------------------------------------------
 
-    numerical_columns = [
-        column
-        for column in df.columns
-        if column not in CATEGORICAL_FEATURES
-    ]
+    numerical_columns = [column for column in df.columns if column not in CATEGORICAL_FEATURES]
 
     for column in numerical_columns:
-        df[column] = (
-            pd.to_numeric(
-                df[column],
-                errors="coerce",
-            )
-            .fillna(0)
-        )
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce",
+        ).fillna(0)
 
     return df
 
@@ -147,10 +132,7 @@ def preprocess_dataset(
     """
 
     if TARGET_COLUMN not in df.columns:
-        raise ValueError(
-            f"Required target column "
-            f"'{TARGET_COLUMN}' was not found."
-        )
+        raise ValueError(f"Required target column " f"'{TARGET_COLUMN}' was not found.")
 
     target = pd.to_numeric(
         df[TARGET_COLUMN],

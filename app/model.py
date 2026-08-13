@@ -125,15 +125,13 @@ API_TO_MODEL_COLUMNS = {
 # module and makes testing/deployment behavior cleaner.
 # ---------------------------------------------------------
 
+
 @lru_cache(maxsize=1)
 def get_model() -> CatBoostRegressor:
     """Load and cache the trained CatBoost model."""
 
     if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            "CatBoost model file was not found at: "
-            f"{MODEL_PATH}"
-        )
+        raise FileNotFoundError("CatBoost model file was not found at: " f"{MODEL_PATH}")
 
     model = CatBoostRegressor()
     model.load_model(str(MODEL_PATH))
@@ -144,6 +142,7 @@ def get_model() -> CatBoostRegressor:
 # ---------------------------------------------------------
 # Prediction
 # ---------------------------------------------------------
+
 
 def predict_sale_price(
     payload: Mapping[str, Any],
@@ -161,36 +160,18 @@ def predict_sale_price(
     """
 
     if not isinstance(payload, Mapping):
-        raise TypeError(
-            "Prediction payload must be a mapping/dictionary."
-        )
+        raise TypeError("Prediction payload must be a mapping/dictionary.")
 
-    missing_api_features = [
-        feature
-        for feature in FEATURES
-        if feature not in payload
-    ]
+    missing_api_features = [feature for feature in FEATURES if feature not in payload]
 
     if missing_api_features:
-        raise ValueError(
-            "Missing required API features: "
-            f"{missing_api_features}"
-        )
+        raise ValueError("Missing required API features: " f"{missing_api_features}")
 
     # Build one-row DataFrame using only expected API fields.
-    df = pd.DataFrame(
-        [
-            {
-                feature: payload[feature]
-                for feature in FEATURES
-            }
-        ]
-    )
+    df = pd.DataFrame([{feature: payload[feature] for feature in FEATURES}])
 
     # Convert API-friendly names back to original Ames names.
-    df = df.rename(
-        columns=API_TO_MODEL_COLUMNS
-    )
+    df = df.rename(columns=API_TO_MODEL_COLUMNS)
 
     # IMPORTANT:
     # This is the exact same preprocessing function used by
@@ -202,22 +183,13 @@ def predict_sale_price(
     model_features = list(model.feature_names_)
 
     if not model_features:
-        raise ValueError(
-            "The loaded CatBoost model does not contain "
-            "feature-name metadata."
-        )
+        raise ValueError("The loaded CatBoost model does not contain " "feature-name metadata.")
 
-    missing_model_features = [
-        feature
-        for feature in model_features
-        if feature not in df.columns
-    ]
+    missing_model_features = [feature for feature in model_features if feature not in df.columns]
 
     if missing_model_features:
         raise ValueError(
-            "Features required by the trained model are "
-            f"missing after preprocessing: "
-            f"{missing_model_features}"
+            "Features required by the trained model are " f"missing after preprocessing: " f"{missing_model_features}"
         )
 
     # Match exact training feature order.

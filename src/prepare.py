@@ -17,9 +17,7 @@ with open(
 
 raw_path = Path(params["data"]["raw"])
 train_path = Path(params["data"]["train"])
-validation_path = Path(
-    params["data"]["validation"]
-)
+validation_path = Path(params["data"]["validation"])
 test_path = Path(params["data"]["test"])
 
 random_state = params["split"]["random_state"]
@@ -44,9 +42,7 @@ train_validation_df, test_df = train_test_split(
     random_state=random_state,
 )
 
-relative_validation_size = (
-    validation_size / (1.0 - test_size)
-)
+relative_validation_size = validation_size / (1.0 - test_size)
 
 train_df, validation_df = train_test_split(
     train_validation_df,
@@ -61,9 +57,7 @@ train_df, validation_df = train_test_split(
 # --------------------------------------------
 
 train_df = preprocess_dataset(train_df)
-validation_df = preprocess_dataset(
-    validation_df
-)
+validation_df = preprocess_dataset(validation_df)
 test_df = preprocess_dataset(test_df)
 
 
@@ -95,13 +89,7 @@ test_df.to_csv(
 print("Data preparation complete.")
 print(f"Total rows:      {len(df)}")
 print(f"Training rows:   {len(train_df)}")
-print(
-    f"Validation rows: "
-    f"{len(validation_df)}"
-)
+print(f"Validation rows: " f"{len(validation_df)}")
 print(f"Test rows:       {len(test_df)}")
 
-print(
-    f"Model features:  "
-    f"{len(train_df.columns) - 1}"
-)
+print(f"Model features:  " f"{len(train_df.columns) - 1}")

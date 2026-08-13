@@ -41,17 +41,11 @@ def project_path(path_value: str) -> Path:
     return PROJECT_ROOT / path_value
 
 
-train_path = project_path(
-    params["data"]["train"]
-)
+train_path = project_path(params["data"]["train"])
 
-validation_path = project_path(
-    params["data"]["validation"]
-)
+validation_path = project_path(params["data"]["validation"])
 
-model_path = project_path(
-    params["paths"]["model"]
-)
+model_path = project_path(params["paths"]["model"])
 
 
 # ---------------------------------------------------------
@@ -63,26 +57,18 @@ df_validation = pd.read_csv(validation_path)
 
 
 if TARGET_COLUMN not in df_train.columns:
-    raise ValueError(
-        f"{TARGET_COLUMN} is missing from training data."
-    )
+    raise ValueError(f"{TARGET_COLUMN} is missing from training data.")
 
 if TARGET_COLUMN not in df_validation.columns:
-    raise ValueError(
-        f"{TARGET_COLUMN} is missing from validation data."
-    )
+    raise ValueError(f"{TARGET_COLUMN} is missing from validation data.")
 
 
-X_train = df_train.drop(
-    columns=[TARGET_COLUMN]
-)
+X_train = df_train.drop(columns=[TARGET_COLUMN])
 
 y_train = df_train[TARGET_COLUMN]
 
 
-X_validation = df_validation.drop(
-    columns=[TARGET_COLUMN]
-)
+X_validation = df_validation.drop(columns=[TARGET_COLUMN])
 
 y_validation = df_validation[TARGET_COLUMN]
 
@@ -91,54 +77,33 @@ y_validation = df_validation[TARGET_COLUMN]
 # Validate feature schema
 # ---------------------------------------------------------
 
-if list(X_train.columns) != list(
-    X_validation.columns
-):
-    raise ValueError(
-        "Training and validation feature schemas "
-        "do not match."
-    )
+if list(X_train.columns) != list(X_validation.columns):
+    raise ValueError("Training and validation feature schemas " "do not match.")
 
 
-categorical_features = [
-    column
-    for column in CATEGORICAL_FEATURES
-    if column in X_train.columns
-]
+categorical_features = [column for column in CATEGORICAL_FEATURES if column in X_train.columns]
 
 
 # ---------------------------------------------------------
 # MLflow configuration
 # ---------------------------------------------------------
 
-mlflow.set_tracking_uri(
-    params["mlflow"]["tracking_uri"]
-)
+mlflow.set_tracking_uri(params["mlflow"]["tracking_uri"])
 
-mlflow.set_experiment(
-    params["mlflow"]["experiment_name"]
-)
+mlflow.set_experiment(params["mlflow"]["experiment_name"])
 
 
 # ---------------------------------------------------------
 # Train and validate
 # ---------------------------------------------------------
 
-with mlflow.start_run(
-    run_name=params["mlflow"]["run_name"]
-) as run:
+with mlflow.start_run(run_name=params["mlflow"]["run_name"]) as run:
 
     model_parameters = {
         "depth": params["model"]["depth"],
-        "learning_rate": (
-            params["model"]["learning_rate"]
-        ),
-        "iterations": (
-            params["model"]["iterations"]
-        ),
-        "random_seed": (
-            params["model"]["random_seed"]
-        ),
+        "learning_rate": (params["model"]["learning_rate"]),
+        "iterations": (params["model"]["iterations"]),
+        "random_seed": (params["model"]["random_seed"]),
     }
 
     mlflow.log_params(model_parameters)
@@ -175,23 +140,18 @@ with mlflow.start_run(
         cat_features=categorical_features,
     )
 
-
     # -----------------------------------------------------
     # Validation evaluation
     # -----------------------------------------------------
 
-    validation_predictions = model.predict(
-        X_validation
-    )
+    validation_predictions = model.predict(X_validation)
 
     validation_mse = mean_squared_error(
         y_validation,
         validation_predictions,
     )
 
-    validation_rmse = (
-        validation_mse ** 0.5
-    )
+    validation_rmse = validation_mse**0.5
 
     validation_mae = mean_absolute_error(
         y_validation,
@@ -203,17 +163,13 @@ with mlflow.start_run(
         validation_predictions,
     )
 
-
     validation_metrics = {
         "validation_rmse": validation_rmse,
         "validation_mae": validation_mae,
         "validation_r2": validation_r2,
     }
 
-    mlflow.log_metrics(
-        validation_metrics
-    )
-
+    mlflow.log_metrics(validation_metrics)
 
     # -----------------------------------------------------
     # Save native CatBoost model
@@ -224,10 +180,7 @@ with mlflow.start_run(
         exist_ok=True,
     )
 
-    model.save_model(
-        str(model_path)
-    )
-
+    model.save_model(str(model_path))
 
     # -----------------------------------------------------
     # Log model to MLflow
@@ -238,11 +191,7 @@ with mlflow.start_run(
         validation_predictions,
     )
 
-    input_example = (
-        X_validation
-        .head(3)
-        .copy()
-    )
+    input_example = X_validation.head(3).copy()
 
     mlflow.catboost.log_model(
         model,
@@ -250,7 +199,6 @@ with mlflow.start_run(
         signature=signature,
         input_example=input_example,
     )
-
 
     run_id = run.info.run_id
 
@@ -262,27 +210,9 @@ with mlflow.start_run(
 print("Training complete.")
 print(f"MLflow run ID:    {run_id}")
 print(f"Training rows:    {len(X_train)}")
-print(
-    f"Validation rows:  "
-    f"{len(X_validation)}"
-)
-print(
-    f"Model features:   "
-    f"{X_train.shape[1]}"
-)
-print(
-    f"Validation RMSE:  "
-    f"{validation_rmse:.4f}"
-)
-print(
-    f"Validation MAE:   "
-    f"{validation_mae:.4f}"
-)
-print(
-    f"Validation R2:    "
-    f"{validation_r2:.4f}"
-)
-print(
-    f"Model saved to:   "
-    f"{model_path}"
-)
+print(f"Validation rows:  " f"{len(X_validation)}")
+print(f"Model features:   " f"{X_train.shape[1]}")
+print(f"Validation RMSE:  " f"{validation_rmse:.4f}")
+print(f"Validation MAE:   " f"{validation_mae:.4f}")
+print(f"Validation R2:    " f"{validation_r2:.4f}")
+print(f"Model saved to:   " f"{model_path}")
