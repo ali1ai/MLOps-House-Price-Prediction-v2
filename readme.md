@@ -1,98 +1,179 @@
-# House Price Prediction
+# House Price Prediction – End-to-End MLOps Pipeline
 
-An end-to-end Machine Learning Operations (MLOps) pipeline for predicting residential property prices using the Ames Housing dataset. This project demonstrates reproducible data versioning, experiment tracking, automated model training, and evaluation using industry-standard MLOps tools.
+An end-to-end Machine Learning Operations (MLOps) project for predicting residential property prices using the Ames Housing dataset.
+
+The project demonstrates the complete machine learning lifecycle, including reproducible data preparation, model training and evaluation, experiment tracking, data and model versioning, API serving, containerization, CI/CD, cloud deployment, drift monitoring, and conditional retraining.
 
 ---
 
 ## Overview
 
-This repository implements a production-oriented machine learning workflow that emphasizes reproducibility, automation, and experiment management.
+The objective of this project is not only to train an accurate regression model, but also to build a reproducible and operational MLOps system around it.
 
 The pipeline includes:
 
-- Data preparation
-- Feature preprocessing
-- Model training
+- Data preparation and validation
+- Shared feature preprocessing
+- Train / validation / test separation
+- CatBoost model training
 - Model evaluation
-- Experiment tracking with MLflow
-- Data and model versioning with DVC
-- Configuration-driven experimentation
-
-The objective is to build a repeatable workflow where datasets, model artifacts, metrics, and experiments remain fully reproducible throughout the machine learning lifecycle.
+- MLflow experiment tracking
+- DVC data and model versioning
+- DagsHub remote DVC storage
+- FastAPI model serving
+- Docker containerization
+- Render cloud deployment
+- GitHub Actions CI/CD
+- EvidentlyAI drift monitoring
+- Scheduled and manual monitoring
+- Conditional candidate-model retraining
+- Current-vs-candidate model comparison
+- Model promotion only when performance improves
 
 ---
 
 ## Architecture
 
 <p align="center">
-  <img src="images/pipeline-diagram.png" width="900" alt="Pipeline Architecture">
+  <img src="images/pipeline-diagram.png" width="900" alt="MLOps Pipeline Architecture">
 </p>
 
-The pipeline follows the workflow below:
+The end-to-end workflow is:
 
 ```text
-                Raw Dataset
-                     │
-                     ▼
-            Data Preparation
-                     │
-                     ▼
-          Feature Engineering
-                     │
-                     ▼
-          Model Training
-             (CatBoost)
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-    Model Artifact         Evaluation
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-        DVC + MLflow Tracking
-```
+                    Ames Housing Dataset
+                             │
+                             ▼
+                     Data Versioning
+                           DVC
+                             │
+                             ▼
+                    Data Preparation
+                       prepare.py
+                             │
+              ┌──────────────┼──────────────┐
+              ▼              ▼              ▼
+           Train         Validation         Test
+            70%             15%             15%
+              │
+              ▼
+                  Shared Preprocessing
+                  preprocessing.py
+              │
+              ▼
+                    CatBoost Training
+                        train.py
+              │
+        ┌─────┴───────────────┐
+        ▼                     ▼
+   Model Artifact         MLflow Tracking
+        │                 Parameters
+        │                 Metrics
+        │                 Artifacts
+        ▼
+                     Model Evaluation
+                       evaluate.py
+                             │
+                             ▼
+                       FastAPI Service
+                             │
+                             ▼
+                      Docker Container
+                             │
+                             ▼
+                     Render Deployment
+                             │
+                             ▼
+                  Production Predictions
+                             │
+                             ▼
+                   Evidently Monitoring
+                             │
+                  ┌──────────┴──────────┐
+                  │                     │
+             No Drift              Drift / Manual
+                  │                 Validation
+                  │                     │
+                  ▼                     ▼
+              Continue          Candidate Retraining
+                                      │
+                                      ▼
+                           Current vs Candidate
+                              Model Comparison
+                                      │
+                                      ▼
+                         Promote Only If Better
 
 ---
 
-## Repository Structure
-
-```text
-house-price-prediction/
+MLOps-House-Price-Prediction-v2/
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── monitor_retrain.yml
+│
+├── app/
+│   ├── main.py
+│   └── model.py
 │
 ├── data/
 │   ├── raw/
-│   └── processed/
+│   ├── processed/
+│   ├── baseline.csv
+│   └── new_batch.csv
 │
 ├── images/
 │
 ├── models/
+│   └── catboost_model.cbm
+│
+├── monitoring/
+│   └── drift_monitor.py
 │
 ├── reports/
+│   ├── metrics.json
+│   ├── drift_report.html
+│   ├── drift_status.json
+│   └── retraining_metrics.json
+│
+├── retraining/
+│   └── retrain.py
 │
 ├── src/
+│   ├── __init__.py
+│   ├── preprocessing.py
 │   ├── prepare.py
 │   ├── train.py
 │   └── evaluate.py
 │
+├── tests/
+│
+├── Dockerfile
 ├── params.yaml
 ├── dvc.yaml
 ├── dvc.lock
+├── model_card.md
 ├── requirements.txt
 └── README.md
-```
-
 ---
 
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| Language | Python |
-| Model | CatBoost |
-| Experiment Tracking | MLflow |
-| Data Versioning | DVC |
-| Configuration | YAML |
-| Version Control | Git |
+| Component               | Technology            |
+| ----------------------- | --------------------- |
+| Language                | Python                |
+| ML Model                | CatBoost Regressor    |
+| Data Processing         | pandas / scikit-learn |
+| Experiment Tracking     | MLflow                |
+| Data & Model Versioning | DVC                   |
+| DVC Remote Storage      | DagsHub               |
+| Configuration           | YAML                  |
+| API                     | FastAPI               |
+| API Server              | Uvicorn               |
+| Containerization        | Docker                |
+| Cloud Deployment        | Render                |
+| CI/CD                   | GitHub Actions        |
+| Monitoring              | EvidentlyAI           |
+| Source Control          | Git + GitHub          |
 
 ---
 
@@ -241,16 +322,19 @@ reports/metrics.json
 
 ## Future Work
 
-Planned improvements include
+Potential extensions include:
 
-- CI/CD with GitHub Actions
-- Docker support
-- FastAPI model serving
-- Model registry
-- Drift detection
-- Automated retraining
-- Cloud deployment
-- Monitoring and alerting
+Production model registry
+Automated rollback
+Prediction-performance monitoring when ground-truth labels become available
+More advanced drift thresholds
+Monitoring alerts and notifications
+More extensive hyperparameter optimization
+Authentication and rate limiting for the public API
+Advanced observability dashboards
+Automated notification channels for monitoring events
+Additional model comparison strategies
+More advanced deployment strategies
 
 ---
 
@@ -258,8 +342,4 @@ Planned improvements include
 
 This project is licensed under the MIT License.
 
----
 
-## **Prepared by:** 
-
-Gao-Ali-Suhayel
