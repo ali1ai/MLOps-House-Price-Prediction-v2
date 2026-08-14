@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import os
 
 import pandas as pd
 from catboost import CatBoostRegressor
@@ -21,20 +22,27 @@ TARGET = "SalePrice"
 
 
 # --------------------------------------------------
-# 2. Check drift status
+# 2. Check drift status / forced validation
 # --------------------------------------------------
 
 if not DRIFT_STATUS_PATH.exists():
-    raise FileNotFoundError("Drift status file not found. " "Run monitoring/drift_monitor.py first.")
+    raise FileNotFoundError(
+        "Drift status file not found. Run monitoring/drift_monitor.py first."
+    )
 
 with open(DRIFT_STATUS_PATH, "r") as file:
     drift_status = json.load(file)
 
 drift_detected = drift_status.get("drift_detected", False)
 
-print("Drift detected:", drift_detected)
+# Manual validation option from GitHub Actions.
+# Normal scheduled runs leave this false.
+force_retrain = os.getenv("FORCE_RETRAIN", "false").strip().lower() == "true"
 
-if not drift_detected:
+print("Drift detected:", drift_detected)
+print("Forced validation run:", force_retrain)
+
+if not drift_detected and not force_retrain:
     print("No drift detected.")
     print("Retraining skipped.")
     raise SystemExit(0)
@@ -44,7 +52,10 @@ if not drift_detected:
 # 3. Load data
 # --------------------------------------------------
 
-print("\nDrift detected. Starting retraining.")
+if force_retrain and not drift_detected:
+    print("\nControlled validation run. Starting candidate retraining.")
+else:
+    print("\nDrift detected. Starting retraining.")
 
 baseline = pd.read_csv(BASELINE_PATH)
 new_data = pd.read_csv(NEW_DATA_PATH)
@@ -56,6 +67,12 @@ print("New batch shape:", new_data.shape)
 # --------------------------------------------------
 # 4. Load current deployed model
 # --------------------------------------------------
+
+if not OLD_MODEL_PATH.exists():
+    raise FileNotFoundError(
+        f"Current model not found at {OLD_MODEL_PATH}. "
+        "Restore the DVC model artifact before retraining."
+    )
 
 old_model = CatBoostRegressor()
 old_model.load_model(str(OLD_MODEL_PATH))
@@ -82,7 +99,6 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     # Create engineered missing-value indicators used
     # when the deployed CatBoost model was trained.
     df["LotFrontage_missing"] = df["LotFrontage"].isna().astype(int)
-
     df["MasVnrArea_missing"] = df["MasVnrArea"].isna().astype(int)
 
     # Fill missing categorical values.
@@ -92,10 +108,14 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
         df[column] = df[column].fillna("Missing").astype(str)
 
     # Check that every feature expected by the model exists.
-    missing_features = [feature for feature in MODEL_FEATURES if feature not in df.columns]
+    missing_features = [
+        feature for feature in MODEL_FEATURES if feature not in df.columns
+    ]
 
     if missing_features:
-        raise ValueError("Missing features required by model: " f"{missing_features}")
+        raise ValueError(
+            f"Missing features required by model: {missing_features}"
+        )
 
     # Use the exact feature names and order expected
     # by the deployed model.
@@ -126,23 +146,9 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 old_preds = old_model.predict(X_val)
 
-old_rmse = (
-    mean_squared_error(
-        y_val,
-        old_preds,
-    )
-    ** 0.5
-)
-
-old_mae = mean_absolute_error(
-    y_val,
-    old_preds,
-)
-
-old_r2 = r2_score(
-    y_val,
-    old_preds,
-)
+old_rmse = mean_squared_error(y_val, old_preds) ** 0.5
+old_mae = mean_absolute_error(y_val, old_preds)
+old_r2 = r2_score(y_val, old_preds)
 
 print("\nCurrent model:")
 print("RMSE:", old_rmse)
@@ -178,23 +184,9 @@ new_model.fit(
 
 new_preds = new_model.predict(X_val)
 
-new_rmse = (
-    mean_squared_error(
-        y_val,
-        new_preds,
-    )
-    ** 0.5
-)
-
-new_mae = mean_absolute_error(
-    y_val,
-    new_preds,
-)
-
-new_r2 = r2_score(
-    y_val,
-    new_preds,
-)
+new_rmse = mean_squared_error(y_val, new_preds) ** 0.5
+new_mae = mean_absolute_error(y_val, new_preds)
+new_r2 = r2_score(y_val, new_preds)
 
 print("\nCandidate model:")
 print("RMSE:", new_rmse)
@@ -206,8 +198,12 @@ print("R2:", new_r2)
 # 10. Save model-comparison metrics
 # --------------------------------------------------
 
+candidate_better = new_rmse < old_rmse
+
 metrics = {
     "drift_detected": drift_detected,
+    "forced_validation": force_retrain,
+    "candidate_better": candidate_better,
     "current_model": {
         "rmse": float(old_rmse),
         "mae": float(old_mae),
@@ -229,12 +225,24 @@ with open(METRICS_PATH, "w") as file:
         indent=4,
     )
 
+print("\nComparison metrics saved to:", METRICS_PATH)
+
 
 # --------------------------------------------------
-# 11. Replace model only when candidate is better
+# 11. Promotion decision
 # --------------------------------------------------
 
-if new_rmse < old_rmse:
+if force_retrain:
+    print("\nControlled validation completed.")
+
+    if candidate_better:
+        print("Candidate model performed better than the current model.")
+    else:
+        print("Current model performed better than or equal to the candidate.")
+
+    print("No model replacement performed during forced validation.")
+
+elif candidate_better:
     new_model.save_model(str(OLD_MODEL_PATH))
 
     print("\nCandidate model is better.")

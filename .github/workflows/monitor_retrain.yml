@@ -2,6 +2,12 @@ name: Monitor and Retrain
 
 on:
   workflow_dispatch:
+    inputs:
+      force_retrain:
+        description: "Force candidate retraining for validation only"
+        required: false
+        default: false
+        type: boolean
 
   schedule:
     - cron: "0 9 * * 1"
@@ -12,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -29,10 +35,13 @@ jobs:
         run: python monitoring/drift_monitor.py
 
       - name: Run retraining decision
+        env:
+          FORCE_RETRAIN: ${{ inputs.force_retrain || false }}
         run: python retraining/retrain.py
 
       - name: Upload monitoring reports
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v6
         with:
           name: monitoring-reports
           path: |
