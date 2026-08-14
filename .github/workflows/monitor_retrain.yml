@@ -30,6 +30,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install evidently==0.7.21
+          pip install dvc-s3
+
+      - name: Configure DVC remote
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          dvc remote add -f -d dagshub s3://dvc
+          dvc remote modify dagshub endpointurl https://dagshub.com/alifa7/MLOps-House-Price-Prediction-v2.s3
+          dvc remote modify dagshub --local access_key_id "$DAGSHUB_TOKEN"
+          dvc remote modify dagshub --local secret_access_key "$DAGSHUB_TOKEN"
+
+      - name: Restore DVC artifacts
+        run: |
+          dvc pull
+          test -f models/catboost_model.cbm
+          echo "DVC model restored successfully."
 
       - name: Run drift monitoring
         run: python monitoring/drift_monitor.py
